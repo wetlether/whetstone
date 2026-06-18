@@ -68,6 +68,7 @@ const SKILL={bug:'Finding the real bug',problem:'Naming the real problem',clear:
 const ITEMS=(window.ITEMS||[]).filter(i=>i&&i.scenario&&i.A&&i.B&&SKILL[i.sk]&&(i.contested||/^[AB]$/.test(i.better)));
 const SKILLS=[...new Set(ITEMS.map(i=>i.sk))];
 const REASONS=[...new Set(ITEMS.filter(i=>!i.contested&&i.whyBetter).map(i=>i.whyBetter))];
+const EXPLOIT=(window.EXPLOIT||[]); const PROFILE=window.PROFILE||{strengths:[],weaknesses:[]};
 const KEY='whetstone_v3', today=()=>new Date().toISOString().slice(0,10);
 let S=Object.assign({xp:0,dayStreak:0,lastPlayed:null,sessions:0,skills:{},items:{},banked:[],history:[]},(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return{}}})());
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
@@ -97,17 +98,62 @@ function render(){setStat();
   if(!ITEMS.length){V().innerHTML=`<div class="card center"><h1>Sharpening the stones… 🔨</h1><p class="sub">Re-open in a moment.</p></div>`;return;}
   const weakest=[...SKILLS].sort((a,b)=>rate(a)-rate(b))[0];
   V().innerHTML='';
-  V().appendChild(el(`<div class="card"><h1>Trust your ear</h1>
-    <p class="sub">Two real moves, written so the wording can't tip you off. Pick the better one — or, when it's a true judgment call, make your case. No tells to read.</p>
-    <button class="btn primary" id="go">Start — ${Math.min(10,ITEMS.length)} calls ›</button>
-    ${weakest?`<p class="muted" style="margin-top:11px">Leaning on <b style="color:var(--accent)">${SKILL[weakest]}</b> today.</p>`:''}</div>`));
+  V().appendChild(el(`<div class="card"><h1>Two ways to sharpen</h1>
+    <p class="sub">No tells to read in either. Train the gaps, or learn to spot the calls that are yours to make.</p>
+    <button class="btn primary" id="go">🪨 Train your weak spots ›</button>
+    <button class="btn" id="exploit" style="margin-top:9px">✨ Exploit your strengths ›</button>
+    <button class="btn ghost" id="prof" style="margin-top:8px">🎯 My verified skill set</button>
+    ${weakest?`<p class="muted" style="margin-top:11px">Training leans on <b style="color:var(--accent)">${SKILL[weakest]}</b> today.</p>`:''}</div>`));
   if(S.banked.length)V().appendChild(el(`<div class="card"><button class="btn" id="bank">🗂 Banked thoughts (${S.banked.length}) ›</button></div>`));
   const g=el(`<div class="card"><h1 style="font-size:17px">Your nine ears</h1><div id="sg"></div></div>`);V().appendChild(g);
   SKILLS.sort((a,b)=>rate(a)-rate(b)).forEach(k=>{const x=sk(k);
     g.querySelector('#sg').appendChild(el(`<div class="skill"><div><span class="nm">${SKILL[k]}</span> <span class="tier">· ${lvName(x.level)}${maxLv(k)>1?' '+x.level+'/'+maxLv(k):''}</span><span class="pct">${x.seen?pct(k)+'%':'new'}</span></div><div class="bar"><i style="width:${pct(k)}%"></i></div></div>`));});
   if(S.history.length>1){const last=S.history.slice(-14);
     V().appendChild(el(`<div class="card"><h1 style="font-size:17px">How your ear's tuning</h1><div style="display:flex;align-items:flex-end;height:74px;gap:5px">${last.map(h=>`<div title="${h.date}: ${h.acc}%" style="flex:1;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:4px 4px 0 0;height:${Math.max(6,h.acc)}%"></div>`).join('')}</div><p class="muted">last ${last.at(-1).acc}%</p></div>`));}
-  document.getElementById('go').onclick=start; const bb=document.getElementById('bank'); if(bb)bb.onclick=showBank;}
+  document.getElementById('go').onclick=start;
+  document.getElementById('exploit').onclick=startExploit;
+  document.getElementById('prof').onclick=showProfile;
+  const bb=document.getElementById('bank'); if(bb)bb.onclick=showBank;}
+
+function showProfile(){V().innerHTML='';
+  V().appendChild(el(`<div class="card"><h1 style="font-size:19px">🎯 Your verified skill set</h1>
+    <p class="sub">Measured blind against the field across five experiments. Use it in Exploit mode when a call is yours to make.</p>
+    <button class="btn ghost" id="home">‹ Home</button></div>`));
+  const s=el(`<div class="card"><h1 style="font-size:16px;color:var(--accent2)">Strengths — lean in</h1></div>`);
+  PROFILE.strengths.forEach(x=>s.appendChild(el(`<div class="bank"><div class="q" style="color:var(--accent2)">${esc(x.name)}</div><div class="muted">${esc(x.desc)}</div></div>`)));
+  V().appendChild(s);
+  const w=el(`<div class="card"><h1 style="font-size:16px;color:var(--bad)">Weak spots — delegate or train</h1></div>`);
+  PROFILE.weaknesses.forEach(x=>w.appendChild(el(`<div class="bank"><div class="q" style="color:var(--bad)">${esc(x.name)}</div><div class="muted">${esc(x.desc)}</div></div>`)));
+  V().appendChild(w);
+  document.getElementById('home').onclick=render;}
+
+function startExploit(){ if(!EXPLOIT.length){showProfile();return;} streakTick();save();
+  exsess={q:[...EXPLOIT].sort(()=>Math.random()-.5).slice(0,Math.min(8,EXPLOIT.length)),i:0,right:0,xp:0}; renderExploit();}
+let exsess=null;
+function renderExploit(){setStat();const it=exsess.q[exsess.i],n=exsess.q.length;
+  const order=it.options.map((t,j)=>({t,j})).sort(()=>Math.random()-.5);
+  V().innerHTML='';
+  const c=el(`<div class="card"><div class="dots">${exsess.q.map((_,k)=>`<div class="dot ${k<exsess.i?'done':k===exsess.i?'cur':''}"></div>`).join('')}</div>
+    <div class="kicker" style="color:var(--accent2)">Exploit · which call is yours to make?</div>
+    <div class="scenario">${esc(it.scenario)}</div>
+    <div class="muted" style="margin-bottom:9px">Which best fits your verified strengths? (Forget the skill names? <a id="peek" style="color:var(--blue);cursor:pointer">peek</a>)</div>
+    ${order.map(o=>`<button class="opt" data-j="${o.j}">${esc(o.t)}</button>`).join('')}</div>`);
+  V().appendChild(c);
+  c.querySelector('#peek').onclick=showProfile;
+  c.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickExploit(it,+b.dataset.j,c));}
+function pickExploit(it,j,c){const ok=j===it.best;
+  c.querySelectorAll('.opt').forEach(b=>{b.onclick=null;if(+b.dataset.j===it.best)b.classList.add('good');else if(+b.dataset.j===j)b.classList.add('bad');else b.classList.add('dim');});
+  if(ok){exsess.right++;S.xp+=10;exsess.xp+=10;}else S.xp+=2; save();setStat();
+  const r=el(`<div class="reveal ${ok?'ok':'no'}"><b>${ok?'✓ That is your move':'✕ The one that fits you was the highlighted one'}</b>
+    <div class="case" style="margin-top:6px">${esc(it.why)}</div>
+    <button class="btn primary" id="next" style="margin-top:11px">${exsess.i+1<exsess.q.length?'Next ›':'Finish ✓'}</button></div>`);
+  V().appendChild(r);r.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('next').onclick=()=>{exsess.i++;exsess.i<exsess.q.length?renderExploit():exEnd();};}
+function exEnd(){V().innerHTML='';
+  V().appendChild(el(`<div class="card center"><div class="kicker" style="color:var(--accent2)">Exploit done</div><div class="big">+${exsess.xp} xp</div>
+    <p class="sub">${exsess.right}/${exsess.q.length} matched your strengths</p>
+    <button class="btn primary" id="again">Again ›</button><button class="btn ghost" id="home" style="margin-top:9px">Home</button></div>`));
+  document.getElementById('again').onclick=startExploit;document.getElementById('home').onclick=render;}
 
 function start(){if(!ITEMS.length)return;streakTick();S.sessions++;save();sess={q:pickSession(10),i:0,right:0,graded:0,xp:0};renderItem();}
 
