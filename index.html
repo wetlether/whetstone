@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1115"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Whetstone"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<title>Whetstone</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8ebf0;--dim:#9aa3b2;--line:#2a2f3a;
+    --accent:#e0a458;--accent2:#7bd0a8;--good:#52c98a;--bad:#e8736b;--blue:#6ea8fe;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:radial-gradient(1000px 520px at 50% -10%,#1a1e27,#0f1115);color:var(--ink);
+    font:16px/1.5 -apple-system,Segoe UI,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .wrap{max-width:640px;margin:0 auto;padding:14px 16px 90px}
+  .topbar{display:flex;align-items:center;gap:12px;padding:6px 0 16px;position:sticky;top:0;background:linear-gradient(#0f1115,#0f1115ee);z-index:5}
+  .logo{font-weight:800;font-size:19px} .logo .s{color:var(--accent)}
+  .stat{margin-left:auto;display:flex;gap:10px}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:800;font-size:14px}
+  .pill small{color:var(--dim);font-weight:600;margin-left:3px}
+  h1{font-size:21px;margin:4px 0 2px} .sub{color:var(--dim);margin:0 0 16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 13px}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;
+    padding:14px 16px;font-weight:800;cursor:pointer;font-size:16px;transition:.12s;width:100%}
+  .btn:active{transform:scale(.99)}
+  .btn.primary{background:linear-gradient(180deg,#e7b06a,#d2913f);color:#241a0c;border:none}
+  .btn.ghost{width:auto;padding:12px 16px}
+  .skill{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:9px}
+  .skill .nm{font-weight:800} .skill .tier{font-size:11px;color:var(--accent);font-weight:800;letter-spacing:.4px}
+  .skill .pct{margin-left:auto;color:var(--dim);font-variant-numeric:tabular-nums;font-weight:700}
+  .bar{height:7px;border-radius:6px;background:#0c0e12;overflow:hidden;margin-top:7px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0;transition:width .4s}
+  .dots{display:flex;gap:5px;margin-bottom:14px} .dot{flex:1;height:6px;border-radius:6px;background:var(--line)}
+  .dot.done{background:var(--accent)} .dot.cur{background:var(--blue)}
+  .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:800;margin-bottom:8px}
+  .scenario{background:var(--panel2);border-left:3px solid var(--accent);border-radius:10px;padding:15px;margin:4px 0 16px;font-size:16.5px}
+  .opt{display:block;width:100%;text-align:left;background:var(--panel2);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;color:var(--ink);font-size:16px;transition:.12s}
+  .opt:active{transform:scale(.995)}
+  .opt .tag{font-weight:900;color:var(--blue);margin-right:8px}
+  .opt.good{border-color:var(--good);background:rgba(82,201,138,.13)}
+  .opt.bad{border-color:var(--bad);background:rgba(232,115,107,.11)}
+  .opt.dim{opacity:.5}
+  .why{display:block;width:100%;text-align:left;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:15px;color:var(--ink)}
+  .why.good{border-color:var(--good);background:rgba(82,201,138,.13)} .why.bad{border-color:var(--bad)}
+  .reveal{border-radius:14px;padding:15px;margin:8px 0 4px;border:1px solid var(--line)}
+  .reveal.ok{background:rgba(82,201,138,.10);border-color:var(--good)} .reveal.no{background:rgba(232,115,107,.10);border-color:var(--bad)}
+  .reveal b{display:block;margin-bottom:5px;font-size:16px}
+  .muted{color:var(--dim);font-size:14px} .big{font-size:38px;font-weight:900;color:var(--accent)} .center{text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><div class="logo">🪨 Whet<span class="s">stone</span></div>
+    <div class="stat"><div class="pill">🔥 <span id="streak">0</span><small>day</small></div><div class="pill">✦ <span id="xp">0</span><small>xp</small></div></div>
+  </div>
+  <div id="view"></div>
+</div>
+<script src="items.js"></script>
+<script>
+// plain skill names (no jargon) — must match the generator's SKILLS keys
+const SKILL = {
+  bug:'Finding the real bug', problem:'Naming the real problem', clear:'Being clear',
+  thinking:'Thinking it through', ripples:'Seeing the ripples', doubt:'Not taking it on faith',
+  first:'First things first', flip:'Flipping the problem', good:'Knowing what is good',
+};
+const ITEMS=(window.ITEMS||[]).filter(i=>i&&i.scenario&&i.optionA&&i.optionB&&/^[AB]$/.test(i.better)&&SKILL[i.sk]);
+const SKILLS=[...new Set(ITEMS.map(i=>i.sk))];
+const KEY='whetstone_v2', today=()=>new Date().toISOString().slice(0,10);
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return{}}}
+let S=Object.assign({xp:0,dayStreak:0,lastPlayed:null,sessions:0,skills:{},items:{},history:[]},load());
+const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+const sk=k=>S.skills[k]||(S.skills[k]={seen:0,right:0,why:0});
+const itm=id=>S.items[id]||(S.items[id]={seen:0,right:0,wrong:0,last:0});
+const rate=k=>{const x=S.skills[k];return x&&x.seen?x.right/x.seen:0};
+const pct=k=>Math.round(rate(k)*100);
+function tier(k){const x=S.skills[k]||{seen:0};const r=rate(k); if(x.seen>=8&&r>=.75)return 3; if(x.seen>=4&&r>=.6)return 2; return 1;}
+const TIERNAME=['','by ear','for real','the fine ear'];
+function streak(){const t=today();if(S.lastPlayed===t)return;const y=new Date(Date.now()-864e5).toISOString().slice(0,10);S.dayStreak=S.lastPlayed===y?S.dayStreak+1:1;S.lastPlayed=t;}
+
+function pickSession(n=10){const now=Date.now();
+  return ITEMS.map(i=>{const r=S.items[i.id]||{seen:0,right:0,wrong:0,last:0};
+    const weak=(1-rate(i.sk))+.2;                       // weaker skill first
+    const fresh=r.seen===0?1.7:1;
+    const fit=i.difficulty===tier(i.sk)?1.5:(i.difficulty<tier(i.sk)?.6:.3); // serve current tier; escalate
+    const due=r.last?Math.min(1.5,(now-r.last)/(36e5*5)):1.2;
+    const miss=(r.wrong+1)/(r.right+1);
+    return {i,w:weak*fresh*fit*due*miss*(0.7+Math.random()*0.6)};
+  }).sort((a,b)=>b.w-a.w).slice(0,Math.min(n,ITEMS.length)).map(x=>x.i).sort(()=>Math.random()-.5);
+}
+
+const el=h=>{const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild};
+const V=()=>document.getElementById('view');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function setStat(){streakEl.textContent=S.dayStreak;xpEl.textContent=S.xp;}
+let streakEl,xpEl;
+let sess=null;
+
+function render(){streakEl=document.getElementById('streak');xpEl=document.getElementById('xp');setStat();
+  if(!ITEMS.length){V().innerHTML=`<div class="card center"><h1>Sharpening the stones… 🔨</h1><p class="sub">The first drills are being made. Re-open in a moment.</p></div>`;return;}
+  const weakest=[...SKILLS].sort((a,b)=>rate(a)-rate(b))[0];
+  V().innerHTML='';
+  V().appendChild(el(`<div class="card"><h1>Trust your ear</h1>
+    <p class="sub">Two ways to handle a coding moment. Pick the better one — then say what made it better. No theory. Just feel, sharpened.</p>
+    <button class="btn primary" id="go">Start — 10 quick calls ›</button>
+    ${weakest?`<p class="muted" style="margin-top:11px">Leaning on <b style="color:var(--accent)">${SKILL[weakest]}</b> today — where you've got the most room.</p>`:''}</div>`));
+  const g=el(`<div class="card"><h1 style="font-size:17px">Your nine ears</h1><div id="sg"></div></div>`);V().appendChild(g);
+  SKILLS.sort((a,b)=>rate(a)-rate(b)).forEach(k=>{const x=sk(k);
+    g.querySelector('#sg').appendChild(el(`<div class="skill"><div style="flex:1">
+      <div style="display:flex;align-items:center"><span><span class="nm">${SKILL[k]}</span> <span class="tier">· ${TIERNAME[tier(k)]}</span></span><span class="pct">${x.seen?pct(k)+'%':'new'}</span></div>
+      <div class="bar"><i style="width:${pct(k)}%"></i></div></div></div>`));});
+  if(S.history.length>1){const last=S.history.slice(-14);
+    V().appendChild(el(`<div class="card"><h1 style="font-size:17px">How your ear's tuning</h1>
+      <div style="display:flex;align-items:flex-end;height:74px;gap:5px">${last.map(h=>`<div title="${h.date}: ${h.acc}%" style="flex:1;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:4px 4px 0 0;height:${Math.max(6,h.acc)}%"></div>`).join('')}</div>
+      <p class="muted">last session ${last.at(-1).acc}%</p></div>`));}
+  document.getElementById('go').onclick=start;
+}
+function start(){if(!ITEMS.length)return;streak();S.sessions++;save();sess={q:pickSession(10),i:0,right:0,why:0,xp:0};renderItem();}
+
+function renderItem(){setStat();const it=sess.q[sess.i],n=sess.q.length;
+  const flip=Math.random()<.5,A=flip?it.optionB:it.optionA,B=flip?it.optionA:it.optionB;
+  const goodSlot=(it.better==='A')?(flip?'B':'A'):(flip?'A':'B');
+  V().innerHTML='';
+  const c=el(`<div class="card"><div class="dots">${sess.q.map((_,k)=>`<div class="dot ${k<sess.i?'done':k===sess.i?'cur':''}"></div>`).join('')}</div>
+    <div class="kicker">${SKILL[it.sk]} · ${TIERNAME[it.difficulty]}</div>
+    <div class="scenario">${esc(it.scenario)}</div>
+    <div class="muted" style="margin-bottom:9px">Which is the better move?</div>
+    <button class="opt" data-s="A"><span class="tag">A</span>${esc(A)}</button>
+    <button class="opt" data-s="B"><span class="tag">B</span>${esc(B)}</button></div>`);
+  V().appendChild(c);
+  c.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickOpt(it,b.dataset.s,goodSlot,c));
+}
+function pickOpt(it,slot,goodSlot,c){const ok=slot===goodSlot;
+  c.querySelectorAll('.opt').forEach(b=>{b.onclick=null;if(b.dataset.s===goodSlot)b.classList.add('good');else if(b.dataset.s===slot)b.classList.add('bad');else b.classList.add('dim');});
+  itm(it.id).seen++;sk(it.sk).seen++;itm(it.id).last=Date.now();
+  if(ok){itm(it.id).right++;sk(it.sk).right++;sess.right++;S.xp+=10;sess.xp+=10;}else itm(it.id).wrong++;
+  save();setStat();
+  const others=SKILLS.filter(k=>k!==it.sk).sort(()=>Math.random()-.5).slice(0,3);
+  const choices=[it.sk,...others].sort(()=>Math.random()-.5);
+  const w=el(`<div class="card"><div class="kicker">${ok?'Nice — good call':'The other one was stronger'} · now: what made it better?</div>
+    ${choices.map(k=>`<button class="why" data-k="${k}">${esc(SKILL[k])}</button>`).join('')}</div>`);
+  V().appendChild(w);w.scrollIntoView({behavior:'smooth',block:'center'});
+  w.querySelectorAll('.why').forEach(b=>b.onclick=()=>{const right=b.dataset.k===it.sk;
+    w.querySelectorAll('.why').forEach(x=>{x.onclick=null;if(x.dataset.k===it.sk)x.classList.add('good');else if(x===b)x.classList.add('bad');});
+    if(right){sk(it.sk).why++;S.xp+=5;sess.xp+=5;sess.why++;}save();setStat();reveal(it,ok,right);});
+}
+function reveal(it,pickOk,whyOk){
+  const r=el(`<div class="reveal ${pickOk?'ok':'no'}"><b>${pickOk?'✓ You felt it':'✕ Close — here\'s the tell'} · <span style="color:var(--accent)">${SKILL[it.sk]}</span></b>
+    <div style="margin:4px 0">${esc(it.why||'')}</div>
+    ${it.trap?`<div class="muted">Why the other one pulls at you: ${esc(it.trap)}</div>`:''}
+    <button class="btn primary" id="next" style="margin-top:13px">${sess.i+1<sess.q.length?'Next ›':'Finish ✓'}</button></div>`);
+  V().appendChild(r);r.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('next').onclick=()=>{sess.i++;sess.i<sess.q.length?renderItem():end();};
+}
+function end(){const n=sess.q.length,acc=Math.round(100*sess.right/n);
+  S.history.push({date:today(),acc});save();V().innerHTML='';
+  V().appendChild(el(`<div class="card center"><div class="kicker">Session done</div>
+    <div class="big">+${sess.xp} xp</div>
+    <p class="sub">${sess.right}/${n} better-call · ${sess.why}/${n} named the reason</p>
+    <button class="btn primary" id="again">Go again ›</button>
+    <button class="btn ghost" id="home" style="margin-top:9px;background:none;border:none;color:var(--blue)">Home</button></div>`));
+  document.getElementById('again').onclick=start;document.getElementById('home').onclick=render;
+}
+render();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

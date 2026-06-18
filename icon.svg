@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#1d2330"/><stop offset="100%" stop-color="#0f1115"/>
+    </radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a414f"/><stop offset="100%" stop-color="#222732"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7bd0a8"/><stop offset="100%" stop-color="#e0a458"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- whetstone -->
+  <rect x="120" y="300" width="272" height="60" rx="18" fill="url(#stone)" stroke="#4a525f" stroke-width="3"/>
+  <!-- blade -->
+  <path d="M150 296 L356 214 L372 236 L168 320 Z" fill="#c9d2df"/>
+  <path d="M150 296 L356 214 L364 225 L156 305 Z" fill="#eef2f8"/>
+  <!-- sparks -->
+  <g fill="url(#spark)">
+    <path d="M250 250 l10 -34 l10 34 l34 10 l-34 10 l-10 34 l-10 -34 l-34 -10 z"/>
+    <circle cx="318" cy="206" r="9"/><circle cx="206" cy="232" r="7"/><circle cx="292" cy="170" r="6"/>
+  </g>
+</svg>
