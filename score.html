@@ -50,8 +50,15 @@ function intro(){V().innerHTML='';
     <p class="sub">Paste your side of a session with your AI coding assistant — your messages, your direction. You get a blind, multi-axis read of your <b>judgment</b> against a field of other developers. (It scores how you direct work, not raw syntax.)</p>
     <textarea id="ta" placeholder="Paste your messages here… (the things you told your assistant to do, fix, change)"></textarea>
     <button class="btn" id="go">Score my coding ›</button></div>`));
-  V().appendChild(el(`<div class="banner">Demo: this card is scored by Claude on a real profile. In Wetlether it runs <b>inside your own box</b> — your code never leaves your cloud, and scoring costs you nothing.</div>`));
-  document.getElementById('go').onclick=()=>report(window.DEMO,true);}
+  const EP=window.SCORE_ENDPOINT||new URLSearchParams(location.search).get('ep');
+  V().appendChild(el(`<div class="banner">${EP?'Scored <b>inside your own box</b> by your own Claude — your code never leaves your cloud.':'Demo: this card is a real profile scored by Claude. In Wetlether it runs <b>inside your own box</b> — your code never leaves your cloud, and scoring costs you nothing.'}</div>`));
+  document.getElementById('go').onclick=async()=>{const text=document.getElementById('ta').value.trim();
+    if(!EP||!text){return report(window.DEMO,!text);}        // no endpoint or empty -> demo
+    V().innerHTML='<div class="card center"><h1>Scoring…</h1><p class="sub">Your box is reading your turns and grading them. One moment.</p></div>';
+    try{const r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+      const j=await r.json(); if(j&&j.scores)return report(j.scores,false);
+      throw new Error(j&&j.error||'no scores');}
+    catch(e){V().innerHTML='<div class="card center"><h1>Could not score that</h1><p class="sub">'+esc(String(e.message||e))+'</p><button class="btn ghost" id="back">Try again</button></div>';document.getElementById('back').onclick=intro;}};}
 
 function report(S,demo){const B=window.BASELINE;V().innerHTML='';
   const op=pctile(S.overall,B.overall);
