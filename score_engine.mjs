@@ -75,8 +75,4 @@ export async function gradeSession(input, callClaude) {
 
 // The frozen field baseline (same numbers baked into score_data.js) — exported so the box can
 // return percentiles too if it prefers server-side placement.
-export const BASELINE = {
-  diagnosis:{mean:5.44,sd:1.27}, intuition:{mean:5.54,sd:1.09}, logic:{mean:5.38,sd:1.13},
-  clarity:{mean:5.37,sd:1.21}, decisiveness:{mean:5.27,sd:1.20}, prioritization:{mean:5.37,sd:1.08},
-  debugging:{mean:4.44,sd:1.25}, systems:{mean:4.82,sd:1.19}, skepticism:{mean:4.74,sd:1.23}, overall:{mean:5.22,sd:1.14}
-};
+export const BASELINE = {"diagnosis":{"mean":5.36,"sd":1.25},"intuition":{"mean":5.51,"sd":1.07},"logic":{"mean":5.32,"sd":1.14},"clarity":{"mean":5.43,"sd":1.18},"decisiveness":{"mean":5.26,"sd":1.18},"prioritization":{"mean":5.35,"sd":1.08},"debugging":{"mean":4.43,"sd":1.23},"systems":{"mean":4.83,"sd":1.18},"skepticism":{"mean":4.75,"sd":1.23},"overall":{"mean":5.25,"sd":1.11}};
