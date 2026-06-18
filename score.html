@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1115"/>
+<title>Score my coding — Whetstone</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8ebf0;--dim:#9aa3b2;--line:#2a2f3a;--accent:#e0a458;--accent2:#7bd0a8;--good:#52c98a;--bad:#e8736b;--blue:#6ea8fe;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:radial-gradient(1000px 520px at 50% -10%,#1a1e27,#0f1115);color:var(--ink);font:16px/1.5 -apple-system,Segoe UI,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 90px}
+  .logo{font-weight:800;font-size:19px;padding:6px 0 14px} .logo .s{color:var(--accent)}
+  h1{font-size:21px;margin:4px 0 2px} .sub{color:var(--dim);margin:0 0 16px;font-size:14.5px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 13px}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--ink);padding:12px;font:15px inherit;min-height:120px;resize:vertical}
+  .btn{appearance:none;border:none;background:linear-gradient(180deg,#e7b06a,#d2913f);color:#241a0c;border-radius:14px;padding:14px 16px;font-weight:800;cursor:pointer;font-size:16px;width:100%;margin-top:10px}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--blue)}
+  .banner{background:rgba(110,168,254,.10);border:1px solid #2f3b52;border-radius:12px;padding:10px 12px;font-size:13px;color:var(--dim);margin-bottom:13px}
+  .big{font-size:52px;font-weight:900;line-height:1;color:var(--accent)} .center{text-align:center}
+  .axis{margin:11px 0}
+  .axis .top{display:flex;align-items:baseline;font-size:14.5px} .axis .nm{font-weight:700} .axis .pc{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+  .track{position:relative;height:9px;border-radius:6px;background:#0c0e12;margin-top:6px;overflow:visible}
+  .track>i{position:absolute;left:0;top:0;height:100%;border-radius:6px}
+  .track>.fieldmark{position:absolute;top:-3px;width:2px;height:15px;background:#6b7488}
+  .lo{color:var(--bad)} .hi{color:var(--good)} .mid{color:var(--accent)}
+  .coach{background:var(--panel2);border-left:3px solid var(--accent);border-radius:8px;padding:11px 13px;margin-bottom:9px;font-size:14.5px}
+  .coach b{color:var(--accent)}
+  .muted{color:var(--dim);font-size:13.5px}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">🪨 Whet<span class="s">stone</span> · Score</div>
+  <div id="view"></div>
+</div>
+<script src="score_data.js"></script>
+<script>
+const AX=[['diagnosis','Naming the problem'],['intuition','Intuition'],['logic','Reasoning'],['clarity','Clarity'],['decisiveness','Decisiveness'],['prioritization','Prioritizing'],['debugging','Debugging'],['systems','Systems thinking'],['skepticism','Skepticism']];
+const COACH={diagnosis:"Name what's actually wrong before asking for a fix — hand over the symptom, not your guess at the cure.",clarity:"Say exactly what you want. If they could build it two ways, you weren't specific enough.",logic:"Show one line of your reasoning, not just the conclusion — they can't see what's in your head.",debugging:"When something breaks, say what you've already ruled out, not just 'it's broken.'",systems:"Before a change, name one other thing it might quietly touch.",skepticism:"Don't take 'it works' on faith — try the exact thing that was broken, yourself.",prioritization:"Do the one that matters most first, not the first one you happened to see.",decisiveness:"Turn 'you decide' into one clear rule that matters, plus freedom on the rest.",intuition:"Trust the gut read — but say it out loud so it can be checked."};
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const ncdf=z=>0.5*(1+erf(z/Math.SQRT2));
+const pctile=(v,b)=>Math.max(1,Math.min(99,Math.round(100*ncdf((v-b.mean)/(b.sd||1)))));
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const V=()=>document.getElementById('view'), el=h=>{const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild};
+
+function intro(){V().innerHTML='';
+  V().appendChild(el(`<div class="card"><h1>Score your coding</h1>
+    <p class="sub">Paste your side of a session with your AI coding assistant — your messages, your direction. You get a blind, multi-axis read of your <b>judgment</b> against a field of other developers. (It scores how you direct work, not raw syntax.)</p>
+    <textarea id="ta" placeholder="Paste your messages here… (the things you told your assistant to do, fix, change)"></textarea>
+    <button class="btn" id="go">Score my coding ›</button></div>`));
+  V().appendChild(el(`<div class="banner">Demo: this card is scored by Claude on a real profile. In Wetlether it runs <b>inside your own box</b> — your code never leaves your cloud, and scoring costs you nothing.</div>`));
+  document.getElementById('go').onclick=()=>report(window.DEMO,true);}
+
+function report(S,demo){const B=window.BASELINE;V().innerHTML='';
+  const op=pctile(S.overall,B.overall);
+  const ranked=AX.map(([k,nm])=>({k,nm,v:S[k],p:pctile(S[k],B[k])})).sort((a,b)=>b.p-a.p);
+  const best=ranked[0], worst=ranked[ranked.length-1];
+  V().appendChild(el(`<div class="card center"><div class="muted">Coding-judgment percentile</div>
+    <div class="big">${op}<span style="font-size:22px">th</span></div>
+    <p class="sub" style="margin-top:8px">vs a field of working developers. ${op<40?'Below the middle — and the breakdown shows exactly where.':op<60?'Right around the middle of the field.':'Above the middle of the field.'}</p>
+    <div class="muted">Strongest: <b style="color:var(--good)">${best.nm}</b> (${best.p}th) · weakest: <b style="color:var(--bad)">${worst.nm}</b> (${worst.p}th)</div></div>`));
+  const prof=el(`<div class="card"><h1 style="font-size:17px">Your profile, axis by axis</h1><p class="muted">Bar = your percentile. The notch = the field's middle.</p><div id="bars"></div></div>`);
+  V().appendChild(prof);
+  for(const a of AX.map(([k,nm])=>({k,nm,p:pctile(S[k],B[k])}))){
+    const cls=a.p>=60?'hi':a.p<=35?'lo':'mid', col=a.p>=60?'var(--good)':a.p<=35?'var(--bad)':'var(--accent)';
+    prof.querySelector('#bars').appendChild(el(`<div class="axis"><div class="top"><span class="nm">${a.nm}</span><span class="pc ${cls}">${a.p}th</span></div>
+      <div class="track"><i style="width:${a.p}%;background:${col}"></i><div class="fieldmark" style="left:50%"></div></div></div>`));}
+  const weak=ranked.slice(-3).reverse();
+  const c=el(`<div class="card"><h1 style="font-size:17px">Three things to work on</h1></div>`);
+  weak.forEach(a=>c.appendChild(el(`<div class="coach"><b>${a.nm}</b> — ${esc(COACH[a.k]||'')}</div>`)));
+  V().appendChild(c);
+  V().appendChild(el(`<div class="card center"><p class="sub">Want to actually move these numbers?</p>
+    <button class="btn" id="train">🪨 Train your weak spots in Whetstone ›</button>
+    <button class="btn ghost" id="again" style="margin-top:9px">Score another session</button>
+    ${demo?'<p class="muted" style="margin-top:10px">This was a demo profile. Paste your own above to score yourself.</p>':''}</div>`));
+  document.getElementById('train').onclick=()=>location.href='./';
+  document.getElementById('again').onclick=intro;
+  window.scrollTo(0,0);}
+
+intro();
+</script>
+</body>
+</html>

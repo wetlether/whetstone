@@ -103,6 +103,7 @@ function render(){setStat();
     <button class="btn primary" id="go">🪨 Train your weak spots ›</button>
     <button class="btn" id="exploit" style="margin-top:9px">✨ Exploit your strengths ›</button>
     <button class="btn ghost" id="prof" style="margin-top:8px">🎯 My verified skill set</button>
+    <button class="btn ghost" id="score" style="margin-top:8px">📊 Score my coding</button>
     ${weakest?`<p class="muted" style="margin-top:11px">Training leans on <b style="color:var(--accent)">${SKILL[weakest]}</b> today.</p>`:''}</div>`));
   if(S.banked.length)V().appendChild(el(`<div class="card"><button class="btn" id="bank">🗂 Banked thoughts (${S.banked.length}) ›</button></div>`));
   const g=el(`<div class="card"><h1 style="font-size:17px">Your nine ears</h1><div id="sg"></div></div>`);V().appendChild(g);
@@ -113,6 +114,7 @@ function render(){setStat();
   document.getElementById('go').onclick=start;
   document.getElementById('exploit').onclick=startExploit;
   document.getElementById('prof').onclick=showProfile;
+  document.getElementById('score').onclick=()=>location.href='score.html';
   const bb=document.getElementById('bank'); if(bb)bb.onclick=showBank;}
 
 function showProfile(){V().innerHTML='';
