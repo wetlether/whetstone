@@ -15,8 +15,11 @@ export const AXES = ['diagnosis','intuition','logic','clarity','decisiveness','p
 
 // Pull the developer's OWN turns out of a pasted chat. Drops obvious assistant/tool/system lines.
 // If the text has no role markers, treat each non-empty block as one of their turns.
+
+const NOISE_GATE=[/toolu_[0-9a-z]/i,/\/(private\/tmp|var\/folders)\//i,/\bcompleted Agent\b|Agent ".*?" completed/i,/current git status|on branch .* up to date|changes not staged for commit/i,/^you are (an?|the)?\s*(ai|assistant|an ai)|you are working inside/i,/agents\.md|repository guidelines|## project structure/i,/idle_notification|"type"\s*:\s*"[a-z_]+"/i,/invokes the .*skill|thin wrapper that invokes/i,/\[\d+ checkpoints?\]/i,/^#\s+(create plan|implementation spec|specification)|^\/[a-z_]+\b/i,/^[0-9a-f]{12,}\b/i];
+export const isJudgmentTurn=t=>!!t&&t.trim().length>=15&&!NOISE_GATE.some(re=>re.test(t));
 export function extractTurns(input) {
-  if (Array.isArray(input)) return input.filter(t => typeof t === 'string' && t.trim().length > 3);
+  if (Array.isArray(input)) return input.filter(t => typeof t === 'string' && isJudgmentTurn(t));
   const text = String(input || '');
   const lines = text.split(/\r?\n/);
   const ASSIST = /^\s*(assistant|claude|ai|bot|gpt|system|tool|>|\[|```)/i;
@@ -32,7 +35,7 @@ export function extractTurns(input) {
   }
   flush();
   // if there were no role markers at all, the whole paste is "their turns" split by blank lines
-  return turns.filter(Boolean).slice(0, 60);
+  return turns.filter(isJudgmentTurn).slice(0, 60);
 }
 
 export function buildGradingPrompt(turns) {
@@ -75,4 +78,4 @@ export async function gradeSession(input, callClaude) {
 
 // The frozen field baseline (same numbers baked into score_data.js) — exported so the box can
 // return percentiles too if it prefers server-side placement.
-export const BASELINE = {"diagnosis":{"mean":5.36,"sd":1.25},"intuition":{"mean":5.51,"sd":1.07},"logic":{"mean":5.32,"sd":1.14},"clarity":{"mean":5.43,"sd":1.18},"decisiveness":{"mean":5.26,"sd":1.18},"prioritization":{"mean":5.35,"sd":1.08},"debugging":{"mean":4.43,"sd":1.23},"systems":{"mean":4.83,"sd":1.18},"skepticism":{"mean":4.75,"sd":1.23},"overall":{"mean":5.25,"sd":1.11}};
+export const BASELINE = {"diagnosis":{"mean":5.66,"sd":1.12},"intuition":{"mean":5.81,"sd":0.87},"logic":{"mean":5.58,"sd":1.03},"clarity":{"mean":5.75,"sd":0.99},"decisiveness":{"mean":5.53,"sd":1.05},"prioritization":{"mean":5.63,"sd":0.92},"debugging":{"mean":4.73,"sd":1.11},"systems":{"mean":5.17,"sd":1},"skepticism":{"mean":5.06,"sd":1.11},"overall":{"mean":5.56,"sd":0.93}};
