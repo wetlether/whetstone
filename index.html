@@ -173,25 +173,59 @@ function renderItem(){setStat();const it=sess.q[sess.i],n=sess.q.length;
   c.querySelectorAll('.opt').forEach(b=>b.onclick=()=>it.contested?pickContested(it,b.dataset.s,c):pickGraded(it,b.dataset.s,c));}
 
 function pickGraded(it,slot,c){const ok=slot===sess.goodSlot;
-  c.querySelectorAll('.opt').forEach(b=>{b.onclick=null;if(b.dataset.s===sess.goodSlot)b.classList.add('good');else if(b.dataset.s===slot)b.classList.add('bad');else b.classList.add('dim');});
+  // neutral-mark only — DO NOT reveal correctness yet; that would leak the answer before the free-text rep
+  c.querySelectorAll('.opt').forEach(b=>{b.onclick=null;if(b.dataset.s===slot)b.classList.add('pick');else b.classList.add('dim');});
   const s=sk(it.sk);s.seen++;s.lvSeen=(s.lvSeen||0)+1;itm(it.id).seen++;itm(it.id).last=Date.now();sess.graded++;
   if(ok){s.right++;s.lvRight=(s.lvRight||0)+1;itm(it.id).right++;sess.right++;S.xp+=10;sess.xp+=10;}else itm(it.id).wrong++;
   // mastery -> level up
   let leveled=false;
   if(s.lvSeen>=4&&s.lvRight/s.lvSeen>=.75&&s.level<maxLv(it.sk)){s.level++;s.lvSeen=0;s.lvRight=0;leveled=true;}
   save();setStat();
-  askWhy(it,ok,leveled);}
+  freeWhy(it,ok,leveled);}
 
-function askWhy(it,ok,leveled){
-  const rs=(it.reasons&&it.reasons.length)?it.reasons.slice():[{t:it.whyBetter,ok:true}];
-  if(rs.length<2){revealGraded(it,ok,leveled);return;}                 // no close-cut set -> skip
+// Step 1: articulate it yourself, with nothing to read off. This is the real training and has zero tell.
+function freeWhy(it,ok,leveled){
+  const w=el(`<div class="card"><div class="kicker">First — say it in your own words</div>
+    <div class="muted" style="margin-bottom:9px">Why is the move you picked the stronger one — or what's the real tradeoff? No options to read. This is the rep that matters.</div>
+    <textarea id="wta" placeholder="Your read…"></textarea>
+    <button class="btn primary" id="wsv" style="margin-top:10px">Compare with the expert read ›</button></div>`);
+  V().appendChild(w);w.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('wsv').onclick=()=>revealCompare(it,ok,leveled,document.getElementById('wta').value.trim());}
+
+// Step 2: now it's safe to reveal. Self-compare your articulation against the expert read.
+function revealCompare(it,ok,leveled,mine){
+  document.querySelectorAll('.opt').forEach(b=>{b.classList.remove('pick','dim');if(b.dataset.s===sess.goodSlot)b.classList.add('good');else b.classList.add('bad');});
+  const r=el(`<div class="reveal ${ok?'ok':'no'}"><b>${ok?'✓ You felt it':'✕ The lean went the other way'} · <span style="color:var(--accent)">${SKILL[it.sk]}</span>${leveled?' · <span style="color:var(--accent2)">level up!</span>':''}</b>
+    ${mine?`<div class="case"><b>Your read:</b> ${esc(mine)}</div>`:''}
+    <div class="case"><b>The lean, and why:</b> ${esc(it.whyBetter)}</div>
+    <div class="case"><b>The real case for the other:</b> ${esc(it.whyOther)}</div>
+    <button class="btn primary" id="fine" style="margin-top:11px">One more — the fine distinction ›</button></div>`);
+  V().appendChild(r);r.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('fine').onclick=()=>secondaryMC(it,ok,leveled);}
+
+// Step 3: secondary check — four close reads, exactly one right, equalized so only the logic distinguishes them.
+function secondaryMC(it,ok,leveled){
+  const rs=(it.reasons&&it.reasons.length>=2)?it.reasons.slice():null;
+  if(!rs){tailGraded(it,ok,leveled);return;}
   const choices=rs.sort(()=>Math.random()-.5);
-  const w=el(`<div class="card"><div class="kicker">${ok?'Good call.':'The lean went the other way.'} Now the close call — which reason is actually the right one?</div>
+  const w=el(`<div class="card"><div class="kicker">Secondary check · four close reads — exactly one is right, the others each miss by one thing</div>
     ${choices.map((r,j)=>`<button class="why" data-i="${j}">${esc(r.t)}</button>`).join('')}</div>`);
   V().appendChild(w);w.scrollIntoView({behavior:'smooth',block:'center'});
   w.querySelectorAll('.why').forEach(b=>b.onclick=()=>{const chosen=choices[+b.dataset.i];
     w.querySelectorAll('.why').forEach(x=>{x.onclick=null;const xv=choices[+x.dataset.i];if(xv.ok)x.classList.add('good');else if(x===b)x.classList.add('bad');});
-    if(chosen.ok){S.xp+=5;sess.xp+=5;}save();setStat();revealGraded(it,ok,leveled);});}
+    if(chosen.ok){S.xp+=5;sess.xp+=5;}save();setStat();tailGraded(it,ok,leveled);});}
+
+function tailGraded(it,ok,leveled){
+  const r=el(`<div class="reveal ${ok?'ok':'no'}"><div id="dz"></div>
+    <button class="btn" id="dis" style="font-size:14px">🤔 I see it differently — bank it</button>
+    <button class="btn primary" id="next" style="margin-top:9px">${sess.i+1<sess.q.length?'Next ›':'Finish ✓'}</button></div>`);
+  V().appendChild(r);r.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('dis').onclick=()=>{const dz=document.getElementById('dz');if(dz.querySelector('textarea'))return;
+    dz.innerHTML=`<textarea id="dta" placeholder="Why do you read it differently? (different theory of mind — we'll dig into it later)"></textarea><button class="btn" id="dsave" style="margin-top:8px">Bank this disagreement</button>`;
+    document.getElementById('dsave').onclick=()=>{const note=document.getElementById('dta').value.trim();if(!note)return;
+      S.banked.push({date:today(),id:it.id,scenario:it.scenario,A:it.A,B:it.B,type:'disagree',lean:it.whyBetter,note});save();
+      dz.innerHTML='<div class="muted">Banked. We will dig in. ✓</div>';};};
+  document.getElementById('next').onclick=()=>{sess.i++;sess.i<sess.q.length?renderItem():end();};}
 
 function pickContested(it,slot,c){
   c.querySelectorAll('.opt').forEach(b=>{b.onclick=null;if(b.dataset.s===slot)b.classList.add('pick');else b.classList.add('dim');});

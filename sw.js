@@ -1,5 +1,5 @@
 // Whetstone offline shell — cache-first so it works on a walk / at the DMV with no signal.
-const C = 'whet-v8';
+const C = 'whet-v9';
 const ASSETS = ['./', 'index.html', 'items.js', 'manifest.json', 'icon.svg', 'score.html', 'score_data.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
