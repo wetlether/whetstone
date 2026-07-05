@@ -1,0 +1,55 @@
+{
+ "abAcc": 0.4358974358974359,
+ "rAcc": 0.3076923076923077,
+ "fails": [
+  {
+   "id": "w49",
+   "sk": "first",
+   "abCrack": 3,
+   "rCrack": 3,
+   "scenario": "Three unrelated things are broken. You're tempted to fix all"
+  },
+  {
+   "id": "w47",
+   "sk": "clear",
+   "abCrack": 2,
+   "rCrack": 1,
+   "scenario": "You want a section to feel more lively, and you describe it "
+  },
+  {
+   "id": "w46",
+   "sk": "clear",
+   "abCrack": 3,
+   "rCrack": 1,
+   "scenario": "You ask someone to add 'the thing we discussed' to a screen."
+  },
+  {
+   "id": "w45",
+   "sk": "ripples",
+   "abCrack": 2,
+   "rCrack": 0,
+   "scenario": "A command works in your terminal. You put it in a script tha"
+  },
+  {
+   "id": "w43",
+   "sk": "doubt",
+   "abCrack": 2,
+   "rCrack": 1,
+   "scenario": "A tool reports it finished the task successfully. You're abo"
+  },
+  {
+   "id": "w41",
+   "sk": "doubt",
+   "abCrack": 2,
+   "rCrack": 0,
+   "scenario": "A page won't let you do something, and you figure it's becau"
+  },
+  {
+   "id": "w36",
+   "sk": "first",
+   "abCrack": 0,
+   "rCrack": 3,
+   "scenario": "Launch is Friday. A rare crash and a much-requested small fe"
+  }
+ ]
+}
